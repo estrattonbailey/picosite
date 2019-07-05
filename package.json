@@ -1,0 +1,21 @@
+{
+  "name": "picosite",
+  "version": "0.0.1",
+  "source": "src/index.js",
+  "umd:main": "dist/picosite.js",
+  "files": [
+    "dist",
+    "themes"
+  ],
+  "scripts": {
+    "build": "microbundle build --external none",
+    "watch": "microbundle watch -o test --external none"
+  },
+  "author": "estrattonbailey",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.0",
+    "microbundle": "^0.11.0"
+  },
+  "dependencies": {}
+}
