@@ -1,8 +1,10 @@
 {
   "name": "picosite",
   "version": "0.0.1",
-  "source": "src/index.js",
-  "umd:main": "dist/picosite.js",
+  "source": "index.js",
+  "module": "dist/picostate.es.js",
+  "main": "dist/picostate.umd.js",
+  "umd:main": "dist/picostate.umd.js",
   "files": [
     "dist",
     "themes"
