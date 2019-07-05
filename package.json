@@ -11,8 +11,21 @@
     "build": "microbundle build --external none",
     "watch": "microbundle watch -o test --external none"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/estrattonbailey/picosite.git"
+  },
   "author": "estrattonbailey",
+  "keywords": [
+    "blog",
+    "generator",
+    "spa"
+  ],
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/estrattonbailey/evx/issues"
+  },
+  "homepage": "https://github.com/estrattonbailey/evx#readme",
   "devDependencies": {
     "live-server": "^1.2.0",
     "microbundle": "^0.11.0"
