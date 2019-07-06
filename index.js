@@ -89,18 +89,18 @@ const parseMarkdown = (function createMarkdownParser () {
   }
 })()
 
-window.picosite = (function createEvents () {
-  const evs = {}
+// window.picosite = (function createEvents () {
+//   const evs = {}
 
-  return {
-    on (ev, cb) {
-      evs[ev] = (evs[ev] || []).concat(cb)
-    },
-    emit (ev) {
-      (evs[ev] || []).map(e => e && e())
-    }
-  }
-})()
+//   return {
+//     on (ev, cb) {
+//       evs[ev] = (evs[ev] || []).concat(cb)
+//     },
+//     emit (ev) {
+//       (evs[ev] || []).map(e => e && e())
+//     }
+//   }
+// })()
 
 window.addEventListener('DOMContentLoaded', e => {
   console.log('picosite')
@@ -142,7 +142,7 @@ window.addEventListener('DOMContentLoaded', e => {
       state.pathname = url
     }
 
-    picosite.emit('after')
+    (window.picositeAfterRender || []).map(fn => fn && fn())
   }
 
   click(a => a && go(clean(a.pathname)))
