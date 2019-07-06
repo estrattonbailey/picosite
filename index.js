@@ -1,3 +1,25 @@
+function capitalize (s) {
+  return s.substr(0, 1).toUpperCase() + s.substr(1)
+}
+
+function clean (href) {
+  return href.replace(window.location.origin, '')
+}
+
+function qs (q) {
+  return q.split('&').reduce((_, p) => {
+    const [ key, val ] = p.split('=')
+    _[key] = decodeURIComponent(val) || true
+    return _
+  }, {})
+}
+
+const { origin, base } = (function getQuery () {
+  const s = document.currentScript
+  const q = s.src.split('?')[1]
+  return q && q.length > 1 ? qs(q) : null
+})()
+
 function click (cb) {
   return document.body.addEventListener('click', e => {
     if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey || e.defaultPrevented) return
@@ -26,35 +48,19 @@ function click (cb) {
   })
 }
 
-function capitalize (s) {
-  return s.substr(0, 1).toUpperCase() + s.substr(1)
-}
-
-function clean (href) {
-  return href.replace(window.location.origin, '')
-}
-
-function qs (q) {
-  return q.split('&').reduce((_, p) => {
-    const [ key, val ] = p.split('=')
-    _[key] = decodeURIComponent(val) || true
-    return _
-  }, {})
-}
-
-const { origin } = (function getQuery () {
-  const s = document.currentScript
-  const q = s.src.split('?')[1]
-  return q && q.length > 1 ? qs(q) : null
-})()
-
 const fetchMarkdown = (function createMarkdownFetcher () {
   const cache = new Map()
 
   return async function fetchMarkdown (url) {
     if (cache.has(url)) return cache.get(url)
 
-    const markdown = await fetch(`https://raw.githubusercontent.com/${origin}/master/${url}`).then(res => res.text())
+    const markdown = await fetch(
+      base ? (
+        `${base}${url}`
+      ) : (
+        `https://raw.githubusercontent.com/${origin}/master/${url}`
+      )
+    ).then(res => res.text())
 
     cache.set(url, markdown)
 
@@ -73,7 +79,7 @@ const parseMarkdown = (function createMarkdownParser () {
     ) : (
       fetch(`https://micro-markdown.now.sh/api`, {
         method: 'POST',
-        body: markdown
+        body: encodeURIComponent(markdown)
       })
     )).then(res => res.json())
 
@@ -83,8 +89,21 @@ const parseMarkdown = (function createMarkdownParser () {
   }
 })()
 
+window.picosite = (function createEvents () {
+  const evs = {}
+
+  return {
+    on (ev, cb) {
+      evs[ev] = (evs[ev] || []).concat(cb)
+    },
+    emit (ev) {
+      (evs[ev] || []).map(e => e && e())
+    }
+  }
+})()
+
 window.addEventListener('DOMContentLoaded', e => {
-  console.log('so nice')
+  console.log('picosite')
 
   document.body.innerHTML = `
     <div class='outer'>
@@ -96,12 +115,12 @@ window.addEventListener('DOMContentLoaded', e => {
   const root = document.getElementById('root')
 
   const state = {
-    pathname: window.location.pathname
+    pathname: clean(window.location.href)
   }
 
   async function go(url, pop) {
     try {
-      let path = (!url || url === '/') ? 'index.md' : url
+      let path = (!url || url === '/') ? '/index.md' : url
       path = /\.md/.test(path) ? path : path + '.md'
       const markdown = await fetchMarkdown(path)
       const { meta, html } = await parseMarkdown(path, markdown)
@@ -115,12 +134,15 @@ window.addEventListener('DOMContentLoaded', e => {
 
       state.pathname = url
     } catch (e) {
+      console.log(e)
       const markdown = await fetchMarkdown('404.md')
       const { meta, html } = await parseMarkdown('404.md', markdown)
       document.title = meta.title
       root.innerHTML = html
       state.pathname = url
     }
+
+    picosite.emit('after')
   }
 
   click(a => a && go(clean(a.pathname)))
@@ -131,5 +153,5 @@ window.addEventListener('DOMContentLoaded', e => {
     return false
   })
 
-  go()
+  go(state.pathname)
 })
