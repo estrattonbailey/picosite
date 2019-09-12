@@ -1,3 +1,12 @@
+async function loadScript (src) {
+  return new Promise(r => {
+    const s = document.createElement('script')
+    s.onload = r
+    s.src = src
+    document.body.prepend(s)
+  })
+}
+
 function capitalize (s) {
   return s.substr(0, 1).toUpperCase() + s.substr(1)
 }
@@ -68,42 +77,47 @@ const fetchMarkdown = (function createMarkdownFetcher () {
   }
 })()
 
-const parseMarkdown = (function createMarkdownParser () {
-  const cache = new Map()
+const reg = /[+-]{3}([\s\S]*)[+-]{3}([\s\S]*)/
 
-  return async function parseMarkdown (url, markdown) {
-    if (cache.has(url)) return cache.get(url)
+function md (raw) {
+  if (reg.test(raw)) {
+    const [ nah, fm, content ] = raw.match(/[+-]{3}([\s\S]*)[+-]{3}([\s\S]*)/)
 
-    const html = await (markdown.length < 1900 ? (
-      fetch(`https://micro-markdown.now.sh/api?md=${encodeURIComponent(markdown)}`)
-    ) : (
-      fetch(`https://micro-markdown.now.sh/api`, {
-        method: 'POST',
-        body: encodeURIComponent(markdown)
-      })
-    )).then(res => res.json())
+    return {
+      meta: jsyaml.safeLoad(fm),
+      html: marked(content)
+    }
+  } else {
+    return {
+      meta: {},
+      html: marked(raw)
+    }
+  }
+}
 
-    cache.set(url, html)
+window.picosite = (function createEvents () {
+  const evs = {}
 
-    return html
+  return {
+    on (ev, cb) {
+      evs[ev] = (evs[ev] || []).concat(cb)
+    },
+    emit (ev) {
+      (evs[ev] || []).map(e => e && e())
+    }
   }
 })()
 
-// window.picosite = (function createEvents () {
-//   const evs = {}
-
-//   return {
-//     on (ev, cb) {
-//       evs[ev] = (evs[ev] || []).concat(cb)
-//     },
-//     emit (ev) {
-//       (evs[ev] || []).map(e => e && e())
-//     }
-//   }
-// })()
-
-window.addEventListener('DOMContentLoaded', e => {
+window.addEventListener('DOMContentLoaded', async e => {
   console.log('picosite')
+
+  await new Promise(r => {
+    const link = document.createElement('link')
+    link.href = 'https://unpkg.com/picosite@0.2.1/themes/default.css'
+    link.rel = 'stylesheet'
+    link.onload = r
+    document.head.appendChild(link)
+  })
 
   document.body.innerHTML = `
     <div class='outer'>
@@ -123,21 +137,21 @@ window.addEventListener('DOMContentLoaded', e => {
       let path = (!url || url === '/') ? '/index.md' : url
       path = /\.md/.test(path) ? path : path + '.md'
       const markdown = await fetchMarkdown(path)
-      const { meta, html } = await parseMarkdown(path, markdown)
+      const { meta, html } = md(markdown)
       document.title = meta.title
       root.innerHTML = html
 
       if (!pop) {
-        document.title = meta.title
+        document.title = meta.title || document.title || 'picosite'
         window.history.pushState({}, '', url)
       }
 
       state.pathname = url
     } catch (e) {
-      console.log(e)
+      console.error(e)
       const markdown = await fetchMarkdown('404.md')
       const { meta, html } = await parseMarkdown('404.md', markdown)
-      document.title = meta.title
+      document.title = meta.title || document.title || '404 | picosite'
       root.innerHTML = html
       state.pathname = url
     }
@@ -152,6 +166,9 @@ window.addEventListener('DOMContentLoaded', e => {
     go(clean(e.target.location.href), true)
     return false
   })
+
+  await loadScript('https://unpkg.com/js-yaml@3.13.1/dist/js-yaml.min.js')
+  await loadScript('https://unpkg.com/marked@0.7.0/marked.min.js')
 
   go(state.pathname)
 })
