@@ -23,7 +23,11 @@ function qs (q) {
   }, {})
 }
 
-const { origin, base } = (function getQuery () {
+const {
+  origin,
+  base = '',
+  theme = 'default'
+} = (function getQuery () {
   const s = document.currentScript
   const q = s.src.split('?')[1]
   return q && q.length > 1 ? qs(q) : null
@@ -39,7 +43,10 @@ function click (cb) {
       a = a.parentNode
     }
 
-    if (!a || a.hash) return
+    if (!a || a.hash) {
+      window.picosite.emit('hash', e)
+      return
+    }
 
     if (
       window.location.origin !== a.origin // external link
@@ -61,6 +68,9 @@ const fetchMarkdown = (function createMarkdownFetcher () {
   const cache = new Map()
 
   return async function fetchMarkdown (url) {
+    url = (!url || url === '/') ? '/index.md' : url
+    url = /\.md/.test(url) ? url : url + '.md'
+
     if (cache.has(url)) return cache.get(url)
 
     const markdown = await fetch(
@@ -74,6 +84,27 @@ const fetchMarkdown = (function createMarkdownFetcher () {
     cache.set(url, markdown)
 
     return markdown
+  }
+})()
+
+const state = {
+  pathname: clean(window.location.href)
+}
+
+window.picosite = (function createPicosite () {
+  const evs = {}
+
+  return {
+    on (ev, cb) {
+      evs[ev] = (evs[ev] || []).concat(cb)
+    },
+    emit (ev, ...args) {
+      return Promise.all((evs[ev] || []).map(e => e && e(...args)))
+    },
+    prefetch: fetchMarkdown,
+    getState () {
+      return state
+    }
   }
 })()
 
@@ -95,29 +126,21 @@ function md (raw) {
   }
 }
 
-window.picosite = (function createEvents () {
-  const evs = {}
-
-  return {
-    on (ev, cb) {
-      evs[ev] = (evs[ev] || []).concat(cb)
-    },
-    emit (ev) {
-      (evs[ev] || []).map(e => e && e())
-    }
-  }
-})()
-
-window.addEventListener('DOMContentLoaded', async e => {
+document.addEventListener('DOMContentLoaded', async e => {
   console.log('picosite')
 
-  await new Promise(r => {
-    const link = document.createElement('link')
-    link.href = 'https://unpkg.com/picosite@0.2.1/themes/default.css'
-    link.rel = 'stylesheet'
-    link.onload = r
-    document.head.appendChild(link)
-  })
+  await window.picosite.emit('init', window.picosite)
+
+  if (theme !== 'none') {
+    await new Promise(r => {
+      const link = document.createElement('link')
+      link.href = `https://unpkg.com/picosite@0.2.1/themes/${theme}.css`
+      link.href = `http://localhost:8080/${theme}.css`
+      link.rel = 'stylesheet'
+      link.onload = r
+      document.head.appendChild(link)
+    })
+  }
 
   document.body.innerHTML = `
     <div class='outer'>
@@ -128,15 +151,11 @@ window.addEventListener('DOMContentLoaded', async e => {
 
   const root = document.getElementById('root')
 
-  const state = {
-    pathname: clean(window.location.href)
-  }
+  async function go(url, pop, first) {
+    if (!first) await window.picosite.emit('before', url)
 
-  async function go(url, pop) {
     try {
-      let path = (!url || url === '/') ? '/index.md' : url
-      path = /\.md/.test(path) ? path : path + '.md'
-      const markdown = await fetchMarkdown(path)
+      const markdown = await fetchMarkdown(url)
       const { meta, html } = md(markdown)
       document.title = meta.title
       root.innerHTML = html
@@ -156,7 +175,7 @@ window.addEventListener('DOMContentLoaded', async e => {
       state.pathname = url
     }
 
-    (window.picositeAfterRender || []).map(fn => fn && fn())
+    window.picosite.emit('after', url)
   }
 
   click(a => a && go(clean(a.pathname)))
@@ -170,5 +189,5 @@ window.addEventListener('DOMContentLoaded', async e => {
   await loadScript('https://unpkg.com/js-yaml@3.13.1/dist/js-yaml.min.js')
   await loadScript('https://unpkg.com/marked@0.7.0/marked.min.js')
 
-  go(state.pathname)
-})
+  go(state.pathname, false, true)
+})()
