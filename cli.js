@@ -14,6 +14,12 @@ const out = path.join(
   'index.html'
 )
 
-fs.outputFileSync(out, index.replace('VERSION', pkg.version))
+fs.outputFileSync(
+  out,
+  index
+    .replace('VERSION', pkg.version)
+    .replace('ORIGIN', args[1] || 'estrattonbailey/picostate-docs')
+    .replace('THEME', args[2] || 'default')
+)
 
 console.log(`picosite created in ${out}`)

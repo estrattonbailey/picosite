@@ -32,7 +32,6 @@
   },
   "homepage": "https://github.com/estrattonbailey/evx#readme",
   "devDependencies": {
-    "live-server": "^1.2.0",
     "microbundle": "^0.11.0"
   },
   "dependencies": {
