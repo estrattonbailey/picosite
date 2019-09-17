@@ -29,17 +29,22 @@ function qs (q) {
 }
 
 const {
-  origin,
+  version,
+  repo,
+  base,
   theme = 'default'
 } = (function getQuery () {
   const s = document.currentScript
   const q = s.src.split('?')[1]
-  console.log({ q })
   return q && q.length > 1 ? qs(q) : {}
 })()
 
-if (!origin) {
-  throw new Error('picosite origin was undefined')
+if (!repo) {
+  throw new Error('picosite repo was undefined')
+}
+
+if (!version) {
+  throw new Error('picosite version was undefined')
 }
 
 const fetchMarkdown = (function createMarkdownFetcher () {
@@ -52,10 +57,10 @@ const fetchMarkdown = (function createMarkdownFetcher () {
     if (cache.has(url)) return cache.get(url)
 
     const markdown = await fetch(
-      window.picosite.base ? (
-        `${window.picosite.base}${url}`
+      base ? (
+        `${base}${url}`
       ) : (
-        `https://raw.githubusercontent.com/${origin}/master/${url}`
+        `https://raw.githubusercontent.com/${repo}/master/${url}`
       )
     ).then(res => res.text())
 
@@ -124,19 +129,17 @@ function md (raw) {
 }
 
 window.addEventListener('DOMContentLoaded', async e => {
-  console.log('picosite')
+  console.log(`picosite v${version}`)
 
   await window.picosite.emit('init', window.picosite)
 
   if (theme !== 'none') {
-    await new Promise(r => {
+    try {
       const link = document.createElement('link')
-      link.href = `https://unpkg.com/picosite@0.2.1/themes/${theme}.css`
-      link.href = `http://localhost:8080/${theme}.css`
+      link.href = `https://unpkg.com/picosite@${version}/themes/${theme}.css`
       link.rel = 'stylesheet'
-      link.onload = r
       document.head.appendChild(link)
-    })
+    } catch (e) {}
   }
 
   document.body.innerHTML = `
