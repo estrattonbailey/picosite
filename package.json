@@ -8,7 +8,8 @@
   "files": [
     "dist",
     "themes",
-    "cli.js"
+    "cli.js",
+    "index.html"
   ],
   "bin": {
     "picosite": "./cli.js"
