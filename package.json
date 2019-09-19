@@ -1,6 +1,6 @@
 {
   "name": "picosite",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "source": "index.js",
   "module": "dist/picosite.es.js",
   "main": "dist/picosite.umd.js",
