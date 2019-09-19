@@ -50,23 +50,37 @@ if (!version) {
 const fetchMarkdown = (function createMarkdownFetcher () {
   const cache = new Map()
 
+  function get (url) {
+    return fetch(url)
+      .then(res => {
+        if (!res.ok) {
+          throw '404'
+        }
+
+        return res
+      })
+  }
+
   return async function fetchMarkdown (url) {
-    url = (!url || url === '/') ? '/index.md' : url
+    url = (!url || url === '/') ? '/index.md' : '/' + url
     url = /\.md/.test(url) ? url : url + '.md'
+    url = url.replace('//', '/')
 
     if (cache.has(url)) return cache.get(url)
 
-    const markdown = await fetch(
+    return get(
       base ? (
         `${base}${url}`
       ) : (
         `https://raw.githubusercontent.com/${repo}/master/${url}`
       )
-    ).then(res => res.text())
+    )
+      .then(res => res.text())
+      .then(markdown => {
+        cache.set(url, markdown)
 
-    cache.set(url, markdown)
-
-    return markdown
+        return markdown
+      })
   }
 })()
 
@@ -209,9 +223,8 @@ window.addEventListener('DOMContentLoaded', async e => {
 
       window.picosite.pathname = url
     } catch (e) {
-      console.error(e)
       const markdown = await fetchMarkdown('404.md')
-      const { meta, html } = md('404.md', markdown)
+      const { meta, html } = md(markdown)
       document.title = meta.title || document.title || '404 | picosite'
       root.innerHTML = html
       window.picosite.pathname = url
