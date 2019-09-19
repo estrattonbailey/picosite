@@ -49,12 +49,16 @@ html, body {
 
 ::selection {
   background: var(--theme);
+  text-shadow: 1px 1px 0 var(--theme), -1px 1px 0 var(--theme), 2px 0 0 var(--theme), -2px 0 0 var(--theme);
 }
-#root {
+.outer {
   padding: 20px;
 }
+.container {
+  max-width: 1400px;
+}
 @media (min-width: 50em) {
-  #root {
+  .outer {
     padding: 40px;;
   }
 }
@@ -179,6 +183,10 @@ em, .i {
 }
 .no-under {
   text-decoration: none;
+}
+
+.mono {
+  font-family: monospace;
 }
 
 li {
