@@ -12,7 +12,7 @@ const outDir = path.resolve(cwd, args.o || args.out || cwd)
 
 const config = {
   version: pkg.version,
-  repo: args.r || args.repo || 'estrattonbailey/picosite-docs',
+  repo: args.r || args.repo || 'estrattonbailey/picosite',
   theme: args.t || args.theme || 'default',
 }
 
